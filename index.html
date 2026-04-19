@@ -1,0 +1,900 @@
+< index.html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pact Tracker | 健身约定记录器</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#000000',       // 纯黑背景
+                        card: '#1c1c1e',       // 深灰卡片
+                        cardHover: '#2c2c2e',
+                        inputBg: '#2c2c2e',    // 输入框底色
+                        primary: '#ff6b00',    // 活力橙色
+                        primaryHover: '#e66000',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- 引入 Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- 引入 html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* 隐藏数字输入框的上下箭头 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* 日期选择器图标适配暗色 */
+        ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
+        ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    </style>
+</head>
+<body class="bg-dark text-white font-sans antialiased min-h-screen flex flex-col selection:bg-primary selection:text-white">
+
+    <!-- 顶部导航 -->
+    <header class="sticky top-0 z-50 bg-dark/80 backdrop-blur-xl border-b border-gray-900 pb-2 pt-4">
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2 text-white font-bold text-2xl tracking-tight">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-dark">
+                        <i class="ph-bold ph-barbell"></i>
+                    </div>
+                    健身<span class="text-primary">约定</span>
+                </div>
+                
+                <!-- 新增：全局系统设置按钮 -->
+                <button onclick="openSettingsModal()" class="p-2 text-gray-400 hover:text-white transition-colors bg-card hover:bg-gray-800 rounded-full border border-gray-800 shadow-sm" title="系统设置">
+                    <i class="ph-bold ph-gear text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- 胶囊状导航栏 -->
+            <nav class="flex gap-1 bg-card p-1 rounded-full">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all bg-primary text-white shadow-lg shadow-primary/30">总览</button>
+                <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all text-gray-400 hover:text-white">历史记录</button>
+                <button onclick="switchTab('rules')" id="tab-rules" class="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all text-gray-400 hover:text-white">规则设置</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+        
+        <!-- ==================== 1. DASHBOARD 视图 ==================== -->
+        <div id="view-dashboard" class="space-y-8 animate-fade-in block">
+            
+            <!-- 顶层：概览总账 -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Weisong Summary -->
+                <div class="bg-card p-5 sm:p-6 rounded-3xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-gray-800/50 group-hover:text-primary/10 transition-colors duration-500">
+                        <i class="ph-fill ph-user text-9xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-primary"></div> Weisong</h3>
+                        <div class="mt-6 space-y-3">
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">累计罚款</p>
+                                <p class="text-xl sm:text-2xl font-black text-white tracking-tight" id="ws-total">RM 0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">待付款</p>
+                                <p class="text-lg font-bold text-red-500" id="ws-unpaid">RM 0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sixiang Summary -->
+                <div class="bg-card p-5 sm:p-6 rounded-3xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-gray-800/50 group-hover:text-primary/10 transition-colors duration-500">
+                        <i class="ph-fill ph-user text-9xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-primary"></div> Sixiang</h3>
+                        <div class="mt-6 space-y-3">
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">累计罚款</p>
+                                <p class="text-xl sm:text-2xl font-black text-white tracking-tight" id="sx-total">RM 0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">待付款</p>
+                                <p class="text-lg font-bold text-red-500" id="sx-unpaid">RM 0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add / 快速记录 -->
+            <div class="bg-card p-6 sm:p-8 rounded-[2rem]">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">记录违规</h2>
+                    <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                        <i class="ph-bold ph-plus"></i>
+                    </div>
+                </div>
+                
+                <form id="record-form" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">日期</label>
+                        <input type="date" id="input-date" required class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">违规人</label>
+                        <div class="relative">
+                            <select id="input-target" class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
+                                <option value="weisong">Weisong</option>
+                                <option value="sixiang">Sixiang</option>
+                            </select>
+                            <i class="ph-bold ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">违规原因</label>
+                        <div class="relative">
+                            <select id="input-reason" class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
+                                <option value="oversleep">起不来 (Oversleep)</option>
+                                <option value="late">迟到 (Late)</option>
+                                <option value="absent">缺席 (Absent)</option>
+                            </select>
+                            <i class="ph-bold ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <div id="late-minutes-container" class="hidden animate-fade-in">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">迟到分钟数</label>
+                        <div class="relative">
+                            <input type="number" id="input-minutes" min="1" placeholder="例如: 15" class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                            <span class="absolute right-4 top-3.5 text-sm text-gray-500 font-medium">分钟</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-dark p-4 rounded-2xl flex justify-between items-center border border-gray-800">
+                        <span class="text-sm font-medium text-gray-400">系统计算金额</span>
+                        <span class="text-2xl font-black text-primary" id="calc-amount">RM 100</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">备注 (选填)</label>
+                        <input type="text" id="input-note" placeholder="例如：塞车、没听到闹钟..." class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+
+                    <button type="submit" class="w-full bg-primary hover:bg-primaryHover text-white font-bold py-4 rounded-full transition-all flex justify-center items-center gap-2 mt-2 shadow-lg shadow-primary/20 active:scale-[0.98]">
+                        保存记录
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== 2. HISTORY 视图 (新建) ==================== -->
+        <div id="view-history" class="hidden space-y-8 animate-fade-in">
+            
+            <!-- Settlement Export Config -->
+            <div class="bg-card p-6 rounded-[2rem] border border-gray-800/50">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph-bold ph-file-pdf text-primary"></i> 导出结算单
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">系统会自动识别并为当前有尾款的人生成报告。</p>
+                    </div>
+                    <div class="flex w-full sm:w-auto items-center gap-4">
+                        <div class="text-sm text-gray-400">
+                            结算对象: <span id="current-debtor-display" class="font-bold text-primary capitalize"></span>
+                        </div>
+                        <button onclick="exportPDF()" class="bg-white text-dark hover:bg-gray-200 font-bold py-2.5 px-6 rounded-xl transition-colors flex items-center justify-center whitespace-nowrap">
+                            下载 PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History List -->
+            <div>
+                <div class="flex justify-between items-center mb-4 px-2">
+                    <h2 class="text-lg font-bold flex items-center gap-2">所有记录</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full" id="history-count">0 条记录</span>
+                        <button onclick="toggleDeleteMode()" id="btn-delete-mode" class="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors" title="批量删除">
+                            <i class="ph-bold ph-trash text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 批量删除操作栏 -->
+                <div id="delete-action-bar" class="hidden flex justify-between items-center bg-red-500/10 border border-red-500/20 p-3 rounded-2xl mb-4 animate-fade-in">
+                    <span class="text-sm text-red-400 font-bold pl-2"><span id="selected-count">0</span> 项已选择</span>
+                    <div class="flex gap-2">
+                        <button onclick="toggleDeleteMode()" class="px-4 py-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors">取消</button>
+                        <button onclick="deleteSelected()" class="px-4 py-1.5 bg-red-500 text-white rounded-full text-xs font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">确认删除</button>
+                    </div>
+                </div>
+                
+                <div class="space-y-4" id="history-list">
+                    <!-- Items generated by JS -->
+                </div>
+            </div>
+
+            <!-- 隐藏的专属结算卡片 (仅用于生成PDF和桌面端预览) -->
+            <div id="settlement-preview-wrapper" class="hidden lg:flex justify-center bg-card p-8 rounded-[2rem] border border-gray-800/50 relative mt-12 overflow-x-auto">
+                <div class="absolute top-4 right-6 text-xs font-medium bg-dark text-gray-400 px-3 py-1.5 rounded-full border border-gray-800 z-10">PDF 预览 (A4 比例)</div>
+                
+                <!-- 真正的白底发票设计 -->
+                <div id="pdf-export-area" class="bg-white text-black w-full max-w-[800px] min-h-[1000px] shadow-2xl flex flex-col font-sans relative">
+                    
+                    <!-- 主体内容区 -->
+                    <div class="p-12 sm:p-16 flex-1">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-16">
+                            <div class="flex items-center gap-2 text-primary font-black text-3xl tracking-tighter">
+                                <i class="ph-bold ph-barbell"></i>
+                                健身<span class="text-gray-900">约定</span>
+                            </div>
+                            <h1 class="text-3xl font-bold tracking-[0.2em] text-gray-900">结算汇总</h1>
+                        </div>
+
+                        <!-- Client & Info Info -->
+                        <div class="flex justify-between items-end mb-12">
+                            <div>
+                                <p class="text-gray-400 font-bold mb-2 uppercase tracking-wider text-xs">Violator Name</p>
+                                <p class="text-2xl font-bold text-gray-900 capitalize" id="settle-name">Weisong</p>
+                            </div>
+                            <div class="text-right text-sm text-gray-500 space-y-1">
+                                <p>Date Issued: <span class="text-gray-900 font-medium" id="settle-date"></span></p>
+                                <p>Ref No: <span class="text-gray-900 font-medium" id="settle-ref"></span></p>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <table class="w-full text-sm text-left mb-8">
+                            <thead class="text-xs text-gray-400 uppercase border-y-2 border-gray-200">
+                                <tr>
+                                    <th class="py-4 px-2 font-bold tracking-wider">Description</th>
+                                    <th class="py-4 px-2 font-bold tracking-wider">Date</th>
+                                    <th class="py-4 px-2 font-bold tracking-wider text-right">Amount Due</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settle-table-body" class="divide-y divide-gray-100">
+                                <!-- Rows generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 底部总结区 (浅灰色底块) -->
+                    <div class="bg-[#f2f1ed] p-12 sm:p-16 mt-auto">
+                        <div class="flex justify-between items-center border-y border-gray-300 py-8 mb-8">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Payment Info</p>
+                                <p class="text-gray-800 font-bold text-sm">Transfer via Touch 'n Go / DuitNow</p>
+                                <p class="text-gray-500 text-xs mt-1">Please settle as soon as possible.</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Total Due</p>
+                                <p class="text-4xl font-black text-primary" id="settle-due">RM 0</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 text-sm font-medium">
+                            <i class="ph-fill ph-heart text-primary"></i> Thank you!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== 3. RULES 视图 ==================== -->
+        <div id="view-rules" class="hidden animate-fade-in">
+            <div class="bg-card p-6 sm:p-8 rounded-[2rem] relative">
+                
+                <!-- 右上角的设置/保存按钮 -->
+                <button type="button" onclick="toggleEditRules()" id="btn-edit-rules" class="absolute top-6 right-6 sm:top-8 sm:right-8 p-2.5 rounded-full bg-dark border border-gray-800 text-gray-400 hover:text-white transition-all shadow-sm z-10" title="编辑规则">
+                    <i class="ph-bold ph-gear text-xl" id="icon-edit-rules"></i>
+                </button>
+
+                <div class="mb-8 pr-12">
+                    <h2 class="text-2xl font-black mb-2">罚款规则设定</h2>
+                    <p class="text-sm text-gray-400 leading-relaxed">在下方配置罚款金额。<strong class="text-primary font-semibold">变更仅对未来的记录生效。</strong>历史记录将保留其原有的锁定金额，不会受到影响。</p>
+                </div>
+
+                <div id="rules-form" class="space-y-4">
+                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-white text-base">起不来罚款</h4>
+                            <p class="text-xs text-gray-400 mt-1">未能按时起床。</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-1">
+                            <span class="text-primary font-bold text-sm">RM</span>
+                            <input type="number" id="rule-oversleep" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-white text-base">迟到罚款 <span class="text-gray-400 font-normal text-sm">/ 每 15 分钟</span></h4>
+                            <p class="text-xs text-gray-400 mt-1">按区间叠加计算（例如：1-15分钟算 1 次）。</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-2">
+                            <span class="text-primary font-bold text-sm">RM</span>
+                            <input type="number" id="rule-late" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-white text-base">缺席罚款</h4>
+                            <p class="text-xs text-gray-400 mt-1">未提前通知的缺席。</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-3">
+                            <span class="text-primary font-bold text-sm">RM</span>
+                            <input type="number" id="rule-absent" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="pt-6 mt-4 border-t border-gray-800/50">
+                        <div class="text-sm text-gray-400">
+                            当前规则生效自：<span id="rules-effective-date" class="text-white font-bold ml-2"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+
+    <!-- ==================== 系统设置 Modal ==================== -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-card border border-gray-800 p-6 rounded-[2rem] w-[90%] max-w-sm shadow-2xl transform scale-95 transition-all duration-300" id="settings-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-bold ph-gear text-primary"></i> 系统设置</h2>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white p-1.5 rounded-full bg-dark border border-gray-800 hover:border-gray-600 transition-colors">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <!-- 刷新页面按钮 -->
+                <button onclick="confirmRefresh()" class="w-full flex items-center justify-between p-4 bg-dark rounded-2xl border border-gray-800 hover:border-primary transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <i class="ph-bold ph-arrows-clockwise text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <span class="block font-bold text-gray-200">刷新整页</span>
+                            <span class="text-xs text-gray-500 mt-0.5 block">重新加载系统与界面界面</span>
+                        </div>
+                    </div>
+                    <i class="ph-bold ph-caret-right text-gray-600 group-hover:text-primary transition-colors"></i>
+                </button>
+
+                <!-- 清除数据按钮 -->
+                <button onclick="clearAllData()" class="w-full flex items-center justify-between p-4 bg-dark rounded-2xl border border-gray-800 hover:border-red-500 transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-red-500/10 rounded-xl text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                            <i class="ph-bold ph-trash text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <span class="block font-bold text-red-500">清除所有数据</span>
+                            <span class="text-xs text-gray-500 mt-0.5 block">清空历史账单与自定义规则</span>
+                        </div>
+                    </div>
+                    <i class="ph-bold ph-caret-right text-gray-600 group-hover:text-red-500 transition-colors"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 数据初始化与结构 =================
+        let isDeleteMode = false;
+        let selectedForDeletion = new Set();
+
+        const DEFAULT_RULES = {
+            oversleepFee: 100,
+            lateFeePer15Min: 20,
+            absenceFee: 100,
+            effectiveFrom: new Date().toISOString().split('T')[0]
+        };
+
+        let rules = JSON.parse(localStorage.getItem('pact_rules')) || DEFAULT_RULES;
+        let records = JSON.parse(localStorage.getItem('pact_records')) || [];
+
+        const formatRM = (amount) => `RM ${amount.toLocaleString()}`;
+        
+        const formatDate = (dateStr) => {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        // ================= 核心计算逻辑 =================
+        function calculateAmount(reason, lateMinutes, currentRules) {
+            if (reason === 'oversleep') return currentRules.oversleepFee;
+            if (reason === 'absent') return currentRules.absenceFee;
+            if (reason === 'late') {
+                const mins = parseInt(lateMinutes) || 0;
+                if (mins <= 0) return 0;
+                const blocks = Math.ceil(mins / 15);
+                return blocks * currentRules.lateFeePer15Min;
+            }
+            return 0;
+        }
+
+        // ================= UI 更新逻辑 =================
+        
+        // 切换 Tab
+        function switchTab(tabId) {
+            // 隐藏所有视图
+            ['dashboard', 'history', 'rules'].forEach(id => {
+                document.getElementById(`view-${id}`).classList.add('hidden');
+                document.getElementById(`view-${id}`).classList.remove('block');
+                
+                // 重置导航按钮样式
+                const btn = document.getElementById(`tab-${id}`);
+                btn.className = 'flex-1 py-2.5 rounded-full text-sm font-semibold transition-all text-gray-400 hover:text-white';
+            });
+
+            // 显示目标视图并高亮按钮
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`view-${tabId}`).classList.add('block');
+            
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.className = 'flex-1 py-2.5 rounded-full text-sm font-semibold transition-all bg-primary text-white shadow-lg shadow-primary/30';
+
+            // 离开历史记录页面时，自动关闭删除模式
+            if (tabId !== 'history' && isDeleteMode) {
+                toggleDeleteMode();
+            }
+
+            // 按需渲染数据
+            if(tabId === 'dashboard' || tabId === 'history') {
+                updateAllData();
+            } else if (tabId === 'rules') {
+                renderRules();
+            }
+        }
+
+        // 统一更新 Dashboard & History 数据
+        function updateAllData() {
+            // 1. 计算 Dashboard 总账
+            let wsTotal = 0, wsPaid = 0;
+            let sxTotal = 0, sxPaid = 0;
+
+            records.forEach(r => {
+                if(r.targetPerson === 'weisong') {
+                    wsTotal += r.amount;
+                    if(r.paid) wsPaid += r.amount;
+                } else if(r.targetPerson === 'sixiang') {
+                    sxTotal += r.amount;
+                    if(r.paid) sxPaid += r.amount;
+                }
+            });
+
+            document.getElementById('ws-total').textContent = formatRM(wsTotal);
+            document.getElementById('ws-unpaid').textContent = formatRM(wsTotal - wsPaid);
+            if(wsTotal - wsPaid === 0) document.getElementById('ws-unpaid').classList.replace('text-red-500', 'text-gray-500');
+            else document.getElementById('ws-unpaid').classList.replace('text-gray-500', 'text-red-500');
+
+            document.getElementById('sx-total').textContent = formatRM(sxTotal);
+            document.getElementById('sx-unpaid').textContent = formatRM(sxTotal - sxPaid);
+            if(sxTotal - sxPaid === 0) document.getElementById('sx-unpaid').classList.replace('text-red-500', 'text-gray-500');
+            else document.getElementById('sx-unpaid').classList.replace('text-gray-500', 'text-red-500');
+
+            // 2. 渲染 History 列表
+            const listEl = document.getElementById('history-list');
+            document.getElementById('history-count').textContent = `共 ${records.length} 条记录`;
+            listEl.innerHTML = '';
+
+            if(records.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-12 text-gray-500 text-sm bg-card rounded-[2rem]">暂无记录，继续保持！</div>`;
+            } else {
+                records.forEach(r => {
+                    const isLate = r.reason === 'late';
+                    const reasonLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
+                    const isSelected = selectedForDeletion.has(r.id);
+                    
+                    const item = document.createElement('div');
+                    // 卡片样式根据支付状态改变，增加选中高亮
+                    item.className = `p-5 rounded-3xl transition-all ${r.paid ? 'bg-dark border border-gray-800 opacity-60' : 'bg-card border border-transparent shadow-sm'} ${isDeleteMode && isSelected ? 'ring-2 ring-red-500/50' : ''} flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center`;
+                    
+                    item.innerHTML = `
+                        ${isDeleteMode ? `
+                        <div class="sm:self-center flex-shrink-0 cursor-pointer p-1" onclick="toggleSelection('${r.id}')">
+                            <div class="w-6 h-6 rounded border-2 ${isSelected ? 'bg-red-500 border-red-500' : 'border-gray-600 hover:border-red-400'} flex items-center justify-center text-white transition-colors">
+                                ${isSelected ? '<i class="ph-bold ph-check text-sm"></i>' : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="flex-1 w-full">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="w-2 h-2 rounded-full ${r.paid ? 'bg-gray-600' : 'bg-primary'}"></span>
+                                <span class="capitalize font-bold text-white text-base">${r.targetPerson}</span>
+                                <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-dark text-gray-400 border border-gray-800">${formatDate(r.date)}</span>
+                            </div>
+                            <div class="text-sm font-medium text-gray-300 flex items-center gap-2 pl-5">
+                                <span>${reasonLabels[r.reason]}</span>
+                                ${isLate ? `<span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">${r.lateMinutes} 分钟</span>` : ''}
+                            </div>
+                            <div class="mt-3 flex items-center gap-2 w-full pl-5">
+                                <i class="ph-bold ph-text-align-left text-gray-500"></i>
+                                <input type="text" value="${r.note || ''}" placeholder="添加备注..." onchange="updateNote('${r.id}', this.value')" ${isDeleteMode ? 'disabled' : ''} class="bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-gray-400 w-full md:w-2/3 transition-colors p-0 placeholder-gray-600 ${isDeleteMode ? 'opacity-50 cursor-not-allowed' : ''}">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between w-full sm:w-auto sm:flex-col sm:items-end gap-3 pl-5 sm:pl-0 border-t border-gray-800 sm:border-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
+                            <span class="text-xl font-black ${r.paid ? 'text-gray-500 line-through' : 'text-primary'}">${formatRM(r.amount)}</span>
+                            <button onclick="togglePaid('${r.id}')" ${isDeleteMode ? 'disabled' : ''} class="px-4 py-1.5 rounded-full text-xs font-bold transition-all ${r.paid ? 'bg-gray-800 text-gray-400' : 'bg-primary text-white shadow-md shadow-primary/20'} ${isDeleteMode ? 'opacity-50 cursor-not-allowed' : (r.paid ? 'hover:bg-gray-700' : 'hover:bg-primaryHover')}">
+                                ${r.paid ? '已结清' : '标记已付'}
+                            </button>
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            }
+
+            // 3. 更新结算单预览 (位于 History 页面底部)
+            renderSettlementCard();
+        }
+
+        // 获取当前尾款人（自动判断逻辑）
+        function getDebtor() {
+            let wsUnpaid = 0, sxUnpaid = 0;
+            records.forEach(r => {
+                if (!r.paid) {
+                    if (r.targetPerson === 'weisong') wsUnpaid += r.amount;
+                    if (r.targetPerson === 'sixiang') sxUnpaid += r.amount;
+                }
+            });
+            
+            // 谁欠的钱多，结算单就挂谁的名字
+            if (sxUnpaid > wsUnpaid) return 'sixiang';
+            if (wsUnpaid > sxUnpaid) return 'weisong';
+            
+            // 如果都没欠款或欠款一样多，则取最近有记录的人
+            if (records.length > 0) return records[0].targetPerson;
+            return 'weisong'; // 默认
+        }
+
+        // 渲染特定用户的结算单 (用于预览和PDF)
+        function renderSettlementCard() {
+            const user = getDebtor();
+            
+            // 更新 UI 上的结算对象显示
+            const displayEl = document.getElementById('current-debtor-display');
+            if(displayEl) displayEl.textContent = user;
+            
+            // 关键改变：只保留该用户【未付款】的记录
+            const userRecords = records.filter(r => r.targetPerson === user && !r.paid);
+            
+            let totalDue = 0;
+            const tbody = document.getElementById('settle-table-body');
+            tbody.innerHTML = '';
+
+            // 倒序显示，旧的在上
+            [...userRecords].reverse().forEach(r => {
+                totalDue += r.amount;
+
+                const isLate = r.reason === 'late';
+                const reasonLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
+                const reasonStr = reasonLabels[r.reason] + (isLate ? ` (${r.lateMinutes}分钟)` : '');
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-4 px-2 text-gray-800 font-bold">${reasonStr}</td>
+                        <td class="py-4 px-2 text-gray-500">${formatDate(r.date)}</td>
+                        <td class="py-4 px-2 text-right font-bold text-primary">${formatRM(r.amount)}</td>
+                    </tr>
+                `;
+            });
+
+            if(userRecords.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="3" class="py-12 text-center text-gray-400 text-sm italic">该用户当前没有未结清的罚款记录。</td></tr>`;
+            }
+
+            document.getElementById('settle-name').textContent = user;
+            document.getElementById('settle-date').textContent = formatDate(new Date().toISOString());
+            document.getElementById('settle-ref').textContent = 'PT-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('settle-due').textContent = formatRM(totalDue);
+        }
+
+        // 渲染规则设置页面
+        function renderRules() {
+            document.getElementById('rule-oversleep').value = rules.oversleepFee;
+            document.getElementById('rule-late').value = rules.lateFeePer15Min;
+            document.getElementById('rule-absent').value = rules.absenceFee;
+            document.getElementById('rules-effective-date').textContent = formatDate(rules.effectiveFrom);
+        }
+
+        // ================= 事件监听与交互 =================
+
+        // 初始化日期为今天
+        document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+
+        // 监听原因改变，显示/隐藏分钟数，并重新计算金额
+        document.getElementById('input-reason').addEventListener('change', function(e) {
+            const minutesContainer = document.getElementById('late-minutes-container');
+            const minutesInput = document.getElementById('input-minutes');
+            
+            if (e.target.value === 'late') {
+                minutesContainer.classList.remove('hidden');
+                minutesInput.required = true;
+                if(!minutesInput.value) minutesInput.value = 15;
+            } else {
+                minutesContainer.classList.add('hidden');
+                minutesInput.required = false;
+            }
+            updateCalculatedAmount();
+        });
+
+        document.getElementById('input-minutes').addEventListener('input', updateCalculatedAmount);
+
+        function updateCalculatedAmount() {
+            const reason = document.getElementById('input-reason').value;
+            const mins = document.getElementById('input-minutes').value;
+            const amt = calculateAmount(reason, mins, rules);
+            document.getElementById('calc-amount').textContent = formatRM(amt);
+        }
+
+        // 提交新记录
+        document.getElementById('record-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const reason = document.getElementById('input-reason').value;
+            const lateMinutes = reason === 'late' ? parseInt(document.getElementById('input-minutes').value) : null;
+            const amount = calculateAmount(reason, lateMinutes, rules);
+
+            const newRecord = {
+                id: Date.now().toString(),
+                date: document.getElementById('input-date').value,
+                targetPerson: document.getElementById('input-target').value,
+                reason: reason,
+                lateMinutes: lateMinutes,
+                amount: amount,
+                paid: false,
+                note: document.getElementById('input-note').value.trim(),
+                ruleSnapshot: { ...rules } // 保存规则快照
+            };
+
+            records.unshift(newRecord);
+            localStorage.setItem('pact_records', JSON.stringify(records));
+            
+            document.getElementById('input-note').value = '';
+            updateAllData();
+            
+            const btn = this.querySelector('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '保存成功！';
+            btn.classList.replace('bg-primary', 'bg-green-500');
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.replace('bg-green-500', 'bg-primary');
+            }, 1500);
+        });
+
+        // ================= 规则编辑与保存逻辑 =================
+        let isEditingRules = false;
+
+        window.toggleEditRules = function() {
+            const inputs = [
+                { input: document.getElementById('rule-oversleep'), wrap: document.getElementById('rule-input-wrap-1') },
+                { input: document.getElementById('rule-late'), wrap: document.getElementById('rule-input-wrap-2') },
+                { input: document.getElementById('rule-absent'), wrap: document.getElementById('rule-input-wrap-3') }
+            ];
+            const btn = document.getElementById('btn-edit-rules');
+            const icon = document.getElementById('icon-edit-rules');
+
+            if (!isEditingRules) {
+                // 进入编辑模式
+                isEditingRules = true;
+                inputs.forEach(item => {
+                    item.input.disabled = false;
+                    item.wrap.classList.add('border-primary', 'ring-1', 'ring-primary/50');
+                    item.wrap.classList.remove('border-gray-800');
+                    item.input.classList.add('text-primary');
+                });
+                
+                // 图标变为保存
+                icon.className = 'ph-bold ph-floppy-disk text-xl text-primary';
+                btn.classList.add('border-primary/50', 'bg-primary/10');
+                btn.classList.remove('border-gray-800', 'bg-dark');
+                btn.title = "保存规则";
+                
+                // 自动聚焦第一个输入框
+                inputs[0].input.focus();
+            } else {
+                // 保存并退出编辑模式
+                rules.oversleepFee = parseInt(document.getElementById('rule-oversleep').value) || 0;
+                rules.lateFeePer15Min = parseInt(document.getElementById('rule-late').value) || 0;
+                rules.absenceFee = parseInt(document.getElementById('rule-absent').value) || 0;
+                rules.effectiveFrom = new Date().toISOString().split('T')[0];
+
+                localStorage.setItem('pact_rules', JSON.stringify(rules));
+                renderRules();
+                updateCalculatedAmount(); // 更新首页预览
+
+                isEditingRules = false;
+                inputs.forEach(item => {
+                    item.input.disabled = true;
+                    item.wrap.classList.remove('border-primary', 'ring-1', 'ring-primary/50');
+                    item.wrap.classList.add('border-gray-800');
+                    item.input.classList.remove('text-primary');
+                });
+
+                // 图标变绿打勾提示成功，1.5秒后恢复设置图标
+                icon.className = 'ph-bold ph-check text-xl text-green-500';
+                btn.classList.remove('border-primary/50', 'bg-primary/10');
+                btn.classList.add('border-green-500/50', 'bg-green-500/10');
+                btn.title = "编辑规则";
+                
+                setTimeout(() => {
+                    if(!isEditingRules) {
+                        icon.className = 'ph-bold ph-gear text-xl';
+                        btn.classList.remove('border-green-500/50', 'bg-green-500/10');
+                        btn.classList.add('border-gray-800', 'bg-dark');
+                    }
+                }, 1500);
+            }
+        };
+
+        // 切换付款状态
+        window.togglePaid = function(id) {
+            const index = records.findIndex(r => r.id === id);
+            if(index > -1) {
+                records[index].paid = !records[index].paid;
+                localStorage.setItem('pact_records', JSON.stringify(records));
+                updateAllData();
+            }
+        };
+
+        // 更新备注
+        window.updateNote = function(id, value) {
+            const index = records.findIndex(r => r.id === id);
+            if(index > -1) {
+                records[index].note = value.trim();
+                localStorage.setItem('pact_records', JSON.stringify(records));
+            }
+        };
+
+        // ================= 批量删除逻辑 =================
+        window.toggleDeleteMode = function() {
+            if(records.length === 0 && !isDeleteMode) return; // 没有记录时防误触
+            
+            isDeleteMode = !isDeleteMode;
+            selectedForDeletion.clear();
+            
+            const btn = document.getElementById('btn-delete-mode');
+            const actionBar = document.getElementById('delete-action-bar');
+            
+            if(isDeleteMode) {
+                btn.classList.add('text-red-500', 'bg-red-500/10');
+                btn.classList.remove('text-gray-400');
+                actionBar.classList.remove('hidden');
+                document.getElementById('selected-count').textContent = '0';
+            } else {
+                btn.classList.remove('text-red-500', 'bg-red-500/10');
+                btn.classList.add('text-gray-400');
+                actionBar.classList.add('hidden');
+            }
+            
+            updateAllData(); // 重新渲染列表以显示/隐藏复选框
+        };
+
+        window.toggleSelection = function(id) {
+            if(!isDeleteMode) return;
+            if(selectedForDeletion.has(id)) {
+                selectedForDeletion.delete(id);
+            } else {
+                selectedForDeletion.add(id);
+            }
+            document.getElementById('selected-count').textContent = selectedForDeletion.size;
+            updateAllData(); // 重新渲染列表以更新选中状态的高亮
+        };
+
+        window.deleteSelected = function() {
+            if(selectedForDeletion.size === 0) return;
+            
+            if(confirm(`确定要永久删除选中的 ${selectedForDeletion.size} 条记录吗？\n删除后总账和未付款也会随之改变。`)) {
+                records = records.filter(r => !selectedForDeletion.has(r.id));
+                localStorage.setItem('pact_records', JSON.stringify(records));
+                toggleDeleteMode(); // 退出删除模式并自动刷新 UI
+            }
+        };
+
+        // 导出 PDF
+        window.exportPDF = function() {
+            const element = document.getElementById('pdf-export-area');
+            const user = getDebtor();
+            const dateStr = new Date().toISOString().split('T')[0];
+            
+            const opt = {
+                margin:       0, // 因为排版本身已经包含了边距
+                filename:     `PactTracker_Invoice_${user}_${dateStr}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 生成 PDF
+            html2pdf().set(opt).from(element).save();
+        };
+
+        // ================= 全局设置 Modal 逻辑 =================
+        window.openSettingsModal = function() {
+            const modal = document.getElementById('settings-modal');
+            const content = document.getElementById('settings-modal-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // 延迟触发动画，使得过度更平滑
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            });
+        };
+
+        window.closeSettingsModal = function() {
+            const modal = document.getElementById('settings-modal');
+            const content = document.getElementById('settings-modal-content');
+            
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        };
+
+        window.confirmRefresh = function() {
+            if(confirm("确定要刷新整个页面吗？\n(未保存的临时输入可能会丢失)")) {
+                location.reload();
+            }
+        };
+
+        window.clearAllData = function() {
+            const userInput = prompt("⚠️ 极度危险操作！\n\n此操作将永久删除您的所有历史账单和自定义规则，删除后无法恢复。\n\n为防止误删，请在下方输入框中输入「确认」二字：");
+            
+            if (userInput === "确认") {
+                localStorage.removeItem('pact_records');
+                localStorage.removeItem('pact_rules');
+                alert("✅ 所有数据已成功清除，即将重新加载系统。");
+                location.reload();
+            } else if (userInput !== null) {
+                alert("❌ 输入不匹配，已取消清除操作。");
+            }
+        };
+
+        // ================= 初始运行 =================
+        updateCalculatedAmount();
+        updateAllData();
+
+    </script>
+</body>
+</html>

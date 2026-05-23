@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pact Tracker | 健身约定记录器</title>
     
+    <!-- PWA Favicon and Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff6b00">
+    
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -48,8 +55,20 @@
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* 日期选择器图标适配暗色 */
-        ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
+        /* 针对 iOS / 移动端深色日期输入框重置 */
+        input[type="date"] {
+            color-scheme: dark;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        /* 日期选择器图标适配暗色并防止变形 */
+        ::-webkit-calendar-picker-indicator { 
+            filter: invert(1); 
+            opacity: 0.5; 
+            cursor: pointer; 
+            flex-shrink: 0;
+        }
         ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
 </head>
@@ -91,11 +110,16 @@
             <div class="grid grid-cols-2 gap-4">
                 <!-- Weisong Summary -->
                 <div class="bg-card p-5 sm:p-6 rounded-3xl relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 text-gray-800/50 group-hover:text-primary/10 transition-colors duration-500">
-                        <i class="ph-fill ph-user text-9xl"></i>
+                    <div class="absolute -right-4 -top-4 w-32 h-32 opacity-10 group-hover:opacity-25 group-hover:scale-110 transition-all duration-500 rounded-full overflow-hidden">
+                        <img src="https://assets.cdn.filesafe.space/MEscenODawAZGLdtlB7a/media/6a11acfcfe2210f89e506222.webp" class="w-full h-full object-cover">
                     </div>
                     <div class="relative z-10">
-                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-primary"></div> Weisong</h3>
+                        <div class="flex items-center gap-3">
+                            <img src="https://assets.cdn.filesafe.space/MEscenODawAZGLdtlB7a/media/6a11acfcfe2210f89e506222.webp" class="w-12 h-12 rounded-full object-cover ring-2 ring-primary shadow-md">
+                            <div>
+                                <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">Weisong</h3>
+                            </div>
+                        </div>
                         <div class="mt-6 space-y-3">
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">累计罚款</p>
@@ -111,11 +135,16 @@
 
                 <!-- Sixiang Summary -->
                 <div class="bg-card p-5 sm:p-6 rounded-3xl relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 text-gray-800/50 group-hover:text-primary/10 transition-colors duration-500">
-                        <i class="ph-fill ph-user text-9xl"></i>
+                    <div class="absolute -right-4 -top-4 w-32 h-32 opacity-10 group-hover:opacity-25 group-hover:scale-110 transition-all duration-500 rounded-full overflow-hidden">
+                        <img src="https://assets.cdn.filesafe.space/MEscenODawAZGLdtlB7a/media/6a11acfcb3e0c02fe7cc206f.webp" class="w-full h-full object-cover">
                     </div>
                     <div class="relative z-10">
-                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-primary"></div> Sixiang</h3>
+                        <div class="flex items-center gap-3">
+                            <img src="https://assets.cdn.filesafe.space/MEscenODawAZGLdtlB7a/media/6a11acfcb3e0c02fe7cc206f.webp" class="w-12 h-12 rounded-full object-cover ring-2 ring-primary shadow-md">
+                            <div>
+                                <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">Sixiang</h3>
+                            </div>
+                        </div>
                         <div class="mt-6 space-y-3">
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">累计罚款</p>
@@ -323,44 +352,13 @@
                     <p class="text-sm text-gray-400 leading-relaxed">在下方配置罚款金额。<strong class="text-primary font-semibold">变更仅对未来的记录生效。</strong>历史记录将保留其原有的锁定金额，不会受到影响。</p>
                 </div>
 
-                <div id="rules-form" class="space-y-4">
-                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h4 class="font-bold text-white text-base">起不来罚款</h4>
-                            <p class="text-xs text-gray-400 mt-1">未能按时起床。</p>
-                        </div>
-                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-1">
-                            <span class="text-primary font-bold text-sm">RM</span>
-                            <input type="number" id="rule-oversleep" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
-                        </div>
-                    </div>
+                <div id="rules-container" class="space-y-4">
+                    <!-- Rules dynamically rendered here -->
+                </div>
 
-                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h4 class="font-bold text-white text-base">迟到罚款 <span class="text-gray-400 font-normal text-sm">/ 每 15 分钟</span></h4>
-                            <p class="text-xs text-gray-400 mt-1">按区间叠加计算（例如：1-15分钟算 1 次）。</p>
-                        </div>
-                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-2">
-                            <span class="text-primary font-bold text-sm">RM</span>
-                            <input type="number" id="rule-late" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
-                        </div>
-                    </div>
-
-                    <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h4 class="font-bold text-white text-base">缺席罚款</h4>
-                            <p class="text-xs text-gray-400 mt-1">未提前通知的缺席。</p>
-                        </div>
-                        <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800 transition-colors" id="rule-input-wrap-3">
-                            <span class="text-primary font-bold text-sm">RM</span>
-                            <input type="number" id="rule-absent" disabled class="w-16 bg-transparent text-white font-bold text-right focus:outline-none p-0 border-none disabled:opacity-80 transition-colors">
-                        </div>
-                    </div>
-
-                    <div class="pt-6 mt-4 border-t border-gray-800/50">
-                        <div class="text-sm text-gray-400">
-                            当前规则生效自：<span id="rules-effective-date" class="text-white font-bold ml-2"></span>
-                        </div>
+                <div class="pt-6 mt-4 border-t border-gray-800/50">
+                    <div class="text-sm text-gray-400">
+                        当前规则生效自：<span id="rules-effective-date" class="text-white font-bold ml-2"></span>
                     </div>
                 </div>
             </div>
@@ -414,14 +412,27 @@
         let isDeleteMode = false;
         let selectedForDeletion = new Set();
 
-        const DEFAULT_RULES = {
-            oversleepFee: 100,
-            lateFeePer15Min: 20,
-            absenceFee: 100,
-            effectiveFrom: new Date().toISOString().split('T')[0]
-        };
+        const DEFAULT_RULES = [
+            { id: 'oversleep', name: '起不来', description: '未能按时起床。', amount: 100, type: 'flat' },
+            { id: 'late', name: '迟到', description: '按区间叠加计算。', amount: 20, type: 'interval', intervalMinutes: 15 },
+            { id: 'absent', name: '缺席', description: '未提前通知的缺席。', amount: 100, type: 'flat' }
+        ];
 
         let rules = JSON.parse(localStorage.getItem('pact_rules')) || DEFAULT_RULES;
+        // Migration from old object format to new array format
+        if (rules && !Array.isArray(rules)) {
+            const oldRules = rules;
+            rules = [
+                { id: 'oversleep', name: '起不来', description: '未能按时起床。', amount: oldRules.oversleepFee ?? 100, type: 'flat' },
+                { id: 'late', name: '迟到', description: '按区间叠加计算。', amount: oldRules.lateFeePer15Min ?? 20, type: 'interval', intervalMinutes: 15 },
+                { id: 'absent', name: '缺席', description: '未提前通知的缺席。', amount: oldRules.absenceFee ?? 100, type: 'flat' }
+            ];
+            localStorage.setItem('pact_rules', JSON.stringify(rules));
+            if (oldRules.effectiveFrom) {
+                localStorage.setItem('pact_rules_effective', oldRules.effectiveFrom);
+            }
+        }
+        let rulesEffective = localStorage.getItem('pact_rules_effective') || new Date().toISOString().split('T')[0];
         let records = JSON.parse(localStorage.getItem('pact_records')) || [];
 
         const formatRM = (amount) => `RM ${amount.toLocaleString()}`;
@@ -433,19 +444,88 @@
 
         // ================= 核心计算逻辑 =================
         function calculateAmount(reason, lateMinutes, currentRules) {
-            if (reason === 'oversleep') return currentRules.oversleepFee;
-            if (reason === 'absent') return currentRules.absenceFee;
-            if (reason === 'late') {
-                const mins = parseInt(lateMinutes) || 0;
-                if (mins <= 0) return 0;
-                const blocks = Math.ceil(mins / 15);
-                return blocks * currentRules.lateFeePer15Min;
+            if (Array.isArray(currentRules)) {
+                const rule = currentRules.find(r => r.id === reason);
+                if (!rule) return 0;
+                if (rule.type === 'flat') return rule.amount;
+                if (rule.type === 'interval') {
+                    const mins = parseInt(lateMinutes) || 0;
+                    if (mins <= 0) return 0;
+                    const interval = rule.intervalMinutes || 15;
+                    const blocks = Math.ceil(mins / interval);
+                    return blocks * rule.amount;
+                }
+                return 0;
+            } else {
+                // Fallback for old object format
+                if (reason === 'oversleep') return currentRules.oversleepFee ?? 100;
+                if (reason === 'absent') return currentRules.absenceFee ?? 100;
+                if (reason === 'late') {
+                    const mins = parseInt(lateMinutes) || 0;
+                    if (mins <= 0) return 0;
+                    const blocks = Math.ceil(mins / 15);
+                    return blocks * (currentRules.lateFeePer15Min ?? 20);
+                }
+                return 0;
             }
-            return 0;
         }
 
         // ================= UI 更新逻辑 =================
         
+        // 动态渲染违规原因下拉列表
+        function populateReasonDropdown() {
+            const reasonSelect = document.getElementById('input-reason');
+            if (!reasonSelect) return;
+            
+            const currentValue = reasonSelect.value;
+            
+            reasonSelect.innerHTML = rules.map(rule => {
+                const label = rule.type === 'interval' 
+                    ? `${rule.name} (每 ${rule.intervalMinutes}分钟 RM ${rule.amount})`
+                    : `${rule.name} (RM ${rule.amount})`;
+                return `<option value="${rule.id}">${label}</option>`;
+            }).join('');
+            
+            if (rules.some(r => r.id === currentValue)) {
+                reasonSelect.value = currentValue;
+            } else if (rules.length > 0) {
+                reasonSelect.value = rules[0].id;
+            }
+            
+            updateMinutesVisibility();
+            updateCalculatedAmount();
+        }
+
+        // 控制分钟输入框的显示和隐藏
+        function updateMinutesVisibility() {
+            const reasonSelect = document.getElementById('input-reason');
+            const minutesContainer = document.getElementById('late-minutes-container');
+            const minutesInput = document.getElementById('input-minutes');
+            if (!reasonSelect || !minutesContainer || !minutesInput) return;
+            
+            const selectedRuleId = reasonSelect.value;
+            const selectedRule = rules.find(r => r.id === selectedRuleId);
+            
+            if (selectedRule && selectedRule.type === 'interval') {
+                minutesContainer.classList.remove('hidden');
+                minutesInput.required = true;
+                const label = minutesContainer.querySelector('label');
+                if (label) {
+                    label.textContent = `${selectedRule.name}时间`;
+                }
+                const span = minutesContainer.querySelector('span');
+                if (span) {
+                    span.textContent = `分钟 (每 ${selectedRule.intervalMinutes} 分钟)`;
+                }
+                if (!minutesInput.value) {
+                    minutesInput.value = selectedRule.intervalMinutes || 15;
+                }
+            } else {
+                minutesContainer.classList.add('hidden');
+                minutesInput.required = false;
+            }
+        }
+
         // 切换 Tab
         function switchTab(tabId) {
             // 隐藏所有视图
@@ -476,6 +556,36 @@
             } else if (tabId === 'rules') {
                 renderRules();
             }
+        }
+
+        // 获取特定记录关联的规则名称和类型
+        function getRecordRuleDetails(r) {
+            let ruleName = r.reason;
+            let isIntervalType = r.reason === 'late' || (r.lateMinutes !== null && r.lateMinutes !== undefined);
+            
+            if (r.ruleSnapshot) {
+                if (Array.isArray(r.ruleSnapshot)) {
+                    const snapRule = r.ruleSnapshot.find(sr => sr.id === r.reason);
+                    if (snapRule) {
+                        ruleName = snapRule.name;
+                        isIntervalType = snapRule.type === 'interval';
+                    }
+                } else {
+                    const oldLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
+                    ruleName = oldLabels[r.reason] || r.reason;
+                    isIntervalType = r.reason === 'late';
+                }
+            } else {
+                const currentRule = rules.find(cr => cr.id === r.reason);
+                if (currentRule) {
+                    ruleName = currentRule.name;
+                    isIntervalType = currentRule.type === 'interval';
+                } else {
+                    const oldLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
+                    ruleName = oldLabels[r.reason] || r.reason;
+                }
+            }
+            return { ruleName, isIntervalType };
         }
 
         // 统一更新 Dashboard & History 数据
@@ -513,12 +623,10 @@
                 listEl.innerHTML = `<div class="text-center py-12 text-gray-500 text-sm bg-card rounded-[2rem]">暂无记录，继续保持！</div>`;
             } else {
                 records.forEach(r => {
-                    const isLate = r.reason === 'late';
-                    const reasonLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
                     const isSelected = selectedForDeletion.has(r.id);
+                    const { ruleName, isIntervalType } = getRecordRuleDetails(r);
                     
                     const item = document.createElement('div');
-                    // 卡片样式根据支付状态改变，增加选中高亮
                     item.className = `p-5 rounded-3xl transition-all ${r.paid ? 'bg-dark border border-gray-800 opacity-60' : 'bg-card border border-transparent shadow-sm'} ${isDeleteMode && isSelected ? 'ring-2 ring-red-500/50' : ''} flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center`;
                     
                     item.innerHTML = `
@@ -530,14 +638,14 @@
                         </div>
                         ` : ''}
                         <div class="flex-1 w-full">
-                            <div class="flex items-center gap-3 mb-2">
+                            <div class="flex flex-wrap items-center gap-3 mb-2">
                                 <span class="w-2 h-2 rounded-full ${r.paid ? 'bg-gray-600' : 'bg-primary'}"></span>
                                 <span class="capitalize font-bold text-white text-base">${r.targetPerson}</span>
                                 <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-dark text-gray-400 border border-gray-800">${formatDate(r.date)}</span>
                             </div>
                             <div class="text-sm font-medium text-gray-300 flex items-center gap-2 pl-5">
-                                <span>${reasonLabels[r.reason]}</span>
-                                ${isLate ? `<span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">${r.lateMinutes} 分钟</span>` : ''}
+                                <span>${ruleName}</span>
+                                ${isIntervalType && r.lateMinutes ? `<span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">${r.lateMinutes} 分钟</span>` : ''}
                             </div>
                             <div class="mt-3 flex items-center gap-2 w-full pl-5">
                                 <i class="ph-bold ph-text-align-left text-gray-500"></i>
@@ -597,13 +705,17 @@
             [...userRecords].reverse().forEach(r => {
                 totalDue += r.amount;
 
-                const isLate = r.reason === 'late';
-                const reasonLabels = { 'oversleep': '起不来', 'late': '迟到', 'absent': '缺席' };
-                const reasonStr = reasonLabels[r.reason] + (isLate ? ` (${r.lateMinutes}分钟)` : '');
+                const { ruleName, isIntervalType } = getRecordRuleDetails(r);
+                const reasonStr = ruleName + (isIntervalType && r.lateMinutes ? ` (${r.lateMinutes}分钟)` : '');
                 
+                let descriptionHTML = `<div class="text-gray-800 font-bold">${reasonStr}</div>`;
+                if (r.note && r.note.trim()) {
+                    descriptionHTML += `<div class="text-xs text-gray-500 font-normal mt-1">备注: ${r.note.trim()}</div>`;
+                }
+
                 tbody.innerHTML += `
                     <tr>
-                        <td class="py-4 px-2 text-gray-800 font-bold">${reasonStr}</td>
+                        <td class="py-4 px-2">${descriptionHTML}</td>
                         <td class="py-4 px-2 text-gray-500">${formatDate(r.date)}</td>
                         <td class="py-4 px-2 text-right font-bold text-primary">${formatRM(r.amount)}</td>
                     </tr>
@@ -622,10 +734,83 @@
 
         // 渲染规则设置页面
         function renderRules() {
-            document.getElementById('rule-oversleep').value = rules.oversleepFee;
-            document.getElementById('rule-late').value = rules.lateFeePer15Min;
-            document.getElementById('rule-absent').value = rules.absenceFee;
-            document.getElementById('rules-effective-date').textContent = formatDate(rules.effectiveFrom);
+            const container = document.getElementById('rules-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            rules.forEach((rule, idx) => {
+                const isInterval = rule.type === 'interval';
+                let html = '';
+                
+                if (isEditingRules) {
+                    html = `
+                        <div class="p-5 bg-inputBg rounded-2xl border border-gray-800 relative space-y-4 rule-card-edit" data-index="${idx}">
+                            <button type="button" onclick="deleteRuleAt(${idx})" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 transition-colors bg-dark rounded-full border border-gray-800" title="删除此规则">
+                                <i class="ph-bold ph-trash text-base"></i>
+                            </button>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 md:pt-0">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-400 mb-1">规则名称</label>
+                                    <input type="text" class="rule-name w-full bg-dark border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" value="${rule.name || ''}" placeholder="例如: 迟到" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-400 mb-1">计算类型</label>
+                                    <select onchange="onRuleTypeChange(${idx}, this.value)" class="rule-type w-full bg-dark border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary appearance-none cursor-pointer">
+                                        <option value="flat" ${rule.type === 'flat' ? 'selected' : ''}>固定金额</option>
+                                        <option value="interval" ${rule.type === 'interval' ? 'selected' : ''}>按时间叠加</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 mb-1">规则描述</label>
+                                <input type="text" class="rule-description w-full bg-dark border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" value="${rule.description || ''}" placeholder="例如: 按区间叠加计算。">
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-400 mb-1">罚款金额 (RM)</label>
+                                    <input type="number" min="0" class="rule-amount w-full bg-dark border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" value="${rule.amount ?? 0}" required>
+                                </div>
+                                <div class="rule-interval-container ${isInterval ? '' : 'hidden'}">
+                                    <label class="block text-xs font-semibold text-gray-400 mb-1">时间间隔 (分钟)</label>
+                                    <input type="number" min="1" class="rule-interval w-full bg-dark border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" value="${rule.intervalMinutes ?? 15}">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const typeLabel = isInterval 
+                        ? `RM ${rule.amount} / 每 ${rule.intervalMinutes} 分钟` 
+                        : `RM ${rule.amount}`;
+                    
+                    html = `
+                        <div class="p-5 bg-inputBg rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-white text-base">${rule.name}</h4>
+                                <p class="text-xs text-gray-400 mt-1">${rule.description || '无说明'}</p>
+                            </div>
+                            <div class="flex items-center gap-3 bg-dark px-4 py-2 rounded-xl border border-gray-800">
+                                <span class="text-primary font-bold text-sm">${typeLabel}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML += html;
+            });
+            
+            if (isEditingRules) {
+                container.innerHTML += `
+                    <button type="button" onclick="addNewRule()" class="w-full py-4 border-2 border-dashed border-gray-800 hover:border-primary text-gray-500 hover:text-white rounded-2xl transition-all flex items-center justify-center gap-2 font-bold text-sm bg-dark/20 hover:bg-dark/50">
+                        <i class="ph-bold ph-plus"></i> 添加新规则
+                    </button>
+                `;
+            }
+            
+            document.getElementById('rules-effective-date').textContent = formatDate(rulesEffective);
         }
 
         // ================= 事件监听与交互 =================
@@ -635,24 +820,16 @@
 
         // 监听原因改变，显示/隐藏分钟数，并重新计算金额
         document.getElementById('input-reason').addEventListener('change', function(e) {
-            const minutesContainer = document.getElementById('late-minutes-container');
-            const minutesInput = document.getElementById('input-minutes');
-            
-            if (e.target.value === 'late') {
-                minutesContainer.classList.remove('hidden');
-                minutesInput.required = true;
-                if(!minutesInput.value) minutesInput.value = 15;
-            } else {
-                minutesContainer.classList.add('hidden');
-                minutesInput.required = false;
-            }
+            updateMinutesVisibility();
             updateCalculatedAmount();
         });
 
         document.getElementById('input-minutes').addEventListener('input', updateCalculatedAmount);
 
         function updateCalculatedAmount() {
-            const reason = document.getElementById('input-reason').value;
+            const reasonSelect = document.getElementById('input-reason');
+            if (!reasonSelect) return;
+            const reason = reasonSelect.value;
             const mins = document.getElementById('input-minutes').value;
             const amt = calculateAmount(reason, mins, rules);
             document.getElementById('calc-amount').textContent = formatRM(amt);
@@ -662,8 +839,11 @@
         document.getElementById('record-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const reason = document.getElementById('input-reason').value;
-            const lateMinutes = reason === 'late' ? parseInt(document.getElementById('input-minutes').value) : null;
+            const reasonSelect = document.getElementById('input-reason');
+            const reason = reasonSelect.value;
+            const selectedRule = rules.find(r => r.id === reason);
+            const isInterval = selectedRule && selectedRule.type === 'interval';
+            const lateMinutes = isInterval ? parseInt(document.getElementById('input-minutes').value) : null;
             const amount = calculateAmount(reason, lateMinutes, rules);
 
             const newRecord = {
@@ -675,7 +855,7 @@
                 amount: amount,
                 paid: false,
                 note: document.getElementById('input-note').value.trim(),
-                ruleSnapshot: { ...rules } // 保存规则快照
+                ruleSnapshot: JSON.parse(JSON.stringify(rules)) // 保存规则快照
             };
 
             records.unshift(newRecord);
@@ -697,53 +877,89 @@
         // ================= 规则编辑与保存逻辑 =================
         let isEditingRules = false;
 
+        window.onRuleTypeChange = function(idx, val) {
+            const card = document.querySelector(`.rule-card-edit[data-index="${idx}"]`);
+            if (!card) return;
+            const intervalContainer = card.querySelector('.rule-interval-container');
+            if (val === 'interval') {
+                intervalContainer.classList.remove('hidden');
+            } else {
+                intervalContainer.classList.add('hidden');
+            }
+        };
+
+        window.addNewRule = function() {
+            saveRulesFromDOM();
+            
+            const newId = 'custom_' + Date.now();
+            rules.push({
+                id: newId,
+                name: '',
+                description: '',
+                amount: 0,
+                type: 'flat',
+                intervalMinutes: 15
+            });
+            
+            renderRules();
+        };
+
+        window.deleteRuleAt = function(idx) {
+            if (confirm(`确认要删除规则“${rules[idx].name || '未命名规则'}”吗？\n删除规则后，Dashboard 中将无法选择该类型（历史记录不受影响）。`)) {
+                rules.splice(idx, 1);
+                renderRules();
+            }
+        };
+
+        function saveRulesFromDOM() {
+            const cards = document.querySelectorAll('.rule-card-edit');
+            cards.forEach(card => {
+                const idx = parseInt(card.getAttribute('data-index'));
+                const name = card.querySelector('.rule-name').value.trim();
+                const type = card.querySelector('.rule-type').value;
+                const description = card.querySelector('.rule-description').value.trim();
+                const amount = parseInt(card.querySelector('.rule-amount').value) || 0;
+                const intervalMinutes = parseInt(card.querySelector('.rule-interval').value) || 15;
+                
+                if (rules[idx]) {
+                    rules[idx].name = name;
+                    rules[idx].type = type;
+                    rules[idx].description = description;
+                    rules[idx].amount = amount;
+                    rules[idx].intervalMinutes = intervalMinutes;
+                }
+            });
+        }
+
         window.toggleEditRules = function() {
-            const inputs = [
-                { input: document.getElementById('rule-oversleep'), wrap: document.getElementById('rule-input-wrap-1') },
-                { input: document.getElementById('rule-late'), wrap: document.getElementById('rule-input-wrap-2') },
-                { input: document.getElementById('rule-absent'), wrap: document.getElementById('rule-input-wrap-3') }
-            ];
             const btn = document.getElementById('btn-edit-rules');
             const icon = document.getElementById('icon-edit-rules');
 
             if (!isEditingRules) {
-                // 进入编辑模式
                 isEditingRules = true;
-                inputs.forEach(item => {
-                    item.input.disabled = false;
-                    item.wrap.classList.add('border-primary', 'ring-1', 'ring-primary/50');
-                    item.wrap.classList.remove('border-gray-800');
-                    item.input.classList.add('text-primary');
-                });
+                renderRules();
                 
-                // 图标变为保存
                 icon.className = 'ph-bold ph-floppy-disk text-xl text-primary';
                 btn.classList.add('border-primary/50', 'bg-primary/10');
                 btn.classList.remove('border-gray-800', 'bg-dark');
                 btn.title = "保存规则";
-                
-                // 自动聚焦第一个输入框
-                inputs[0].input.focus();
             } else {
-                // 保存并退出编辑模式
-                rules.oversleepFee = parseInt(document.getElementById('rule-oversleep').value) || 0;
-                rules.lateFeePer15Min = parseInt(document.getElementById('rule-late').value) || 0;
-                rules.absenceFee = parseInt(document.getElementById('rule-absent').value) || 0;
-                rules.effectiveFrom = new Date().toISOString().split('T')[0];
-
+                saveRulesFromDOM();
+                
+                const emptyName = rules.some(r => !r.name || r.name.trim() === '');
+                if (emptyName) {
+                    alert("规则名称不能为空！请填写所有规则的名称，或删除不需要的规则。");
+                    return;
+                }
+                
+                rulesEffective = new Date().toISOString().split('T')[0];
                 localStorage.setItem('pact_rules', JSON.stringify(rules));
-                renderRules();
-                updateCalculatedAmount(); // 更新首页预览
-
+                localStorage.setItem('pact_rules_effective', rulesEffective);
+                
                 isEditingRules = false;
-                inputs.forEach(item => {
-                    item.input.disabled = true;
-                    item.wrap.classList.remove('border-primary', 'ring-1', 'ring-primary/50');
-                    item.wrap.classList.add('border-gray-800');
-                    item.input.classList.remove('text-primary');
-                });
-
-                // 图标变绿打勾提示成功，1.5秒后恢复设置图标
+                renderRules();
+                populateReasonDropdown();
+                
                 icon.className = 'ph-bold ph-check text-xl text-green-500';
                 btn.classList.remove('border-primary/50', 'bg-primary/10');
                 btn.classList.add('border-green-500/50', 'bg-green-500/10');
@@ -892,9 +1108,44 @@
         };
 
         // ================= 初始运行 =================
+        populateReasonDropdown();
         updateCalculatedAmount();
         updateAllData();
 
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    // Check for updates on load
+                    reg.update();
+                    
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('新版本 PWA 已下载完毕，正在准备自动热重载以应用更新...');
+                                }
+                            }
+                        };
+                    };
+                }).catch(err => {
+                    console.error('ServiceWorker registration failed: ', err);
+                });
+            });
+
+            // Listen for the controlling Service Worker changing, and reload page
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
     </script>
 </body>
 </html>

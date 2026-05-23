@@ -60,16 +60,21 @@
             color-scheme: dark;
             -webkit-appearance: none;
             appearance: none;
+            position: relative;
         }
 
-        /* 日期选择器图标适配暗色并防止变形 */
-        ::-webkit-calendar-picker-indicator { 
-            filter: invert(1); 
-            opacity: 0.5; 
-            cursor: pointer; 
-            flex-shrink: 0;
+        /* 隐藏原生日期选择图标，统一使用我们自定义的 Phosphor 图标覆盖，并撑满输入框做为点击区域 */
+        input[type="date"]::-webkit-calendar-picker-indicator { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            cursor: pointer;
         }
-        ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
 </head>
 <body class="bg-dark text-white font-sans antialiased min-h-screen flex flex-col selection:bg-primary selection:text-white">
@@ -163,15 +168,15 @@
             <div class="bg-card p-6 sm:p-8 rounded-[2rem]">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-bold">记录违规</h2>
-                    <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                        <i class="ph-bold ph-plus"></i>
-                    </div>
                 </div>
                 
                 <form id="record-form" class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-400 mb-2">日期</label>
-                        <input type="date" id="input-date" required class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                        <div class="relative">
+                            <input type="date" id="input-date" required class="w-full bg-inputBg border-none rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-12">
+                            <i class="ph-bold ph-calendar absolute right-4 top-1/2 -translate-y-1/2 text-white pointer-events-none text-xl"></i>
+                        </div>
                     </div>
                     
                     <div>
